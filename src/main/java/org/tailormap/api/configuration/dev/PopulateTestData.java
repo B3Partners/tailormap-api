@@ -113,7 +113,6 @@ public class PopulateTestData {
   private final GeoServiceRepository geoServiceRepository;
   private final GeoServiceHelper geoServiceHelper;
   private final SolrService solrService;
-
   private final FeatureSourceRepository featureSourceRepository;
   private final ApplicationRepository applicationRepository;
   private final ConfigurationRepository configurationRepository;
@@ -168,7 +167,7 @@ public class PopulateTestData {
       InternalAdminAuthentication.clearSecurityContextAuthentication();
     }
     if (exit) {
-      // Exit after transaction is completed - for 'mvn verify' to populate testdata before
+      // Exit after transaction is completed — for 'mvn verify' to populate testdata before
       // integration tests
       new Thread(
               () -> {

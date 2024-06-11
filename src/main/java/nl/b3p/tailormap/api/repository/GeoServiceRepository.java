@@ -52,4 +52,17 @@ public interface GeoServiceRepository extends JpaRepository<GeoService, String> 
   @PreAuthorize("permitAll()")
   @Query("from GeoService s where id not in :ids")
   List<GeoService> getAllExcludingIds(@Param("ids") List<String> ids);
+
+  /**
+   * Find all geo-services that have a layer that is linked to a specific (Solr) index.
+   *
+   * @param indexId The index id to search for
+   */
+  @NonNull
+  @PreAuthorize("permitAll()")
+  @Query(
+      value =
+          "select * from geo_service gs, lateral jsonb_path_query(gs.settings, ('$.layerSettings.**{1}.searchIndex.searchIndexId ? (@ == '||:indexId||')')::jsonpath)",
+      nativeQuery = true)
+  List<GeoService> findByIndexId(@Param("indexId") @NonNull Long indexId);
 }

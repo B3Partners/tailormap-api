@@ -16,7 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
 @PostgresIntegrationTest
-public class GeoServiceRepositoryIntegrationTest {
+class GeoServiceRepositoryIntegrationTest {
 
   @Autowired private GeoServiceRepository geoServiceRepository;
 

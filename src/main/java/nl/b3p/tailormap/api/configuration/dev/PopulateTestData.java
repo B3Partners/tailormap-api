@@ -19,7 +19,6 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 import nl.b3p.tailormap.api.geotools.featuresources.FeatureSourceFactoryHelper;
 import nl.b3p.tailormap.api.geotools.featuresources.JDBCFeatureSourceHelper;
 import nl.b3p.tailormap.api.geotools.featuresources.WFSFeatureSourceHelper;
@@ -65,11 +64,10 @@ import nl.b3p.tailormap.api.repository.UploadRepository;
 import nl.b3p.tailormap.api.repository.UserRepository;
 import nl.b3p.tailormap.api.security.InternalAdminAuthentication;
 import nl.b3p.tailormap.api.solr.SolrHelper;
+import nl.b3p.tailormap.api.solr.SolrService;
 import nl.b3p.tailormap.api.viewer.model.AppStyling;
 import nl.b3p.tailormap.api.viewer.model.Component;
 import nl.b3p.tailormap.api.viewer.model.ComponentConfig;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -116,7 +114,7 @@ public class PopulateTestData {
   private final CatalogRepository catalogRepository;
   private final GeoServiceRepository geoServiceRepository;
   private final GeoServiceHelper geoServiceHelper;
-
+  private final SolrService solrService;
   private final FeatureSourceRepository featureSourceRepository;
   private final ApplicationRepository applicationRepository;
   private final ConfigurationRepository configurationRepository;
@@ -136,6 +134,7 @@ public class PopulateTestData {
       ConfigurationRepository configurationRepository,
       FeatureSourceFactoryHelper featureSourceFactoryHelper,
       SearchIndexRepository searchIndexRepository,
+      SolrService solrService,
       UploadRepository uploadRepository) {
     this.appContext = appContext;
     this.userRepository = userRepository;
@@ -148,6 +147,7 @@ public class PopulateTestData {
     this.configurationRepository = configurationRepository;
     this.featureSourceFactoryHelper = featureSourceFactoryHelper;
     this.searchIndexRepository = searchIndexRepository;
+    this.solrService = solrService;
     this.uploadRepository = uploadRepository;
   }
 
@@ -1348,19 +1348,7 @@ public class PopulateTestData {
               + (connectToSpatialDbsAtLocalhost ? "127.0.0.1" : "solr")
               + ":8983/solr/"
               + solrCoreName;
-      SolrHelper solrHelper =
-          new SolrHelper(
-              new ConcurrentUpdateHttp2SolrClient.Builder(
-                      solrUrl,
-                      new Http2SolrClient.Builder()
-                          .useHttp1_1(true)
-                          .withFollowRedirects(true)
-                          .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
-                          .withRequestTimeout(60000, TimeUnit.MILLISECONDS)
-                          .build())
-                  .withQueueSize(SolrHelper.SOLR_BATCH_SIZE * 2)
-                  .withThreadCount(10)
-                  .build());
+      SolrHelper solrHelper = new SolrHelper(this.solrService.getSolrClientForIndexing());
 
       GeoService geoService = geoServiceRepository.findById("snapshot-geoserver").orElseThrow();
       Application defaultApp = applicationRepository.findByName("default");

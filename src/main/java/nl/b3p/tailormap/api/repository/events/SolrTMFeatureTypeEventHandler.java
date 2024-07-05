@@ -10,7 +10,8 @@ import java.lang.invoke.MethodHandles;
 import nl.b3p.tailormap.api.geotools.featuresources.FeatureSourceFactoryHelper;
 import nl.b3p.tailormap.api.persistence.SearchIndex;
 import nl.b3p.tailormap.api.persistence.TMFeatureType;
-import nl.b3p.tailormap.api.repository.GeoServiceRepository;
+import nl.b3p.tailormap.api.persistence.json.AppLayerSettings;
+import nl.b3p.tailormap.api.repository.ApplicationRepository;
 import nl.b3p.tailormap.api.repository.SearchIndexRepository;
 import nl.b3p.tailormap.api.solr.SolrHelper;
 import nl.b3p.tailormap.api.solr.SolrService;
@@ -32,17 +33,17 @@ public class SolrTMFeatureTypeEventHandler {
   private final SearchIndexRepository searchIndexRepository;
   private final SolrService solrService;
   private final FeatureSourceFactoryHelper featureSourceFactoryHelper;
-  private final GeoServiceRepository geoServiceRepository;
+  private final ApplicationRepository applicationRepository;
 
   public SolrTMFeatureTypeEventHandler(
       SearchIndexRepository searchIndexRepository,
       SolrService solrService,
       FeatureSourceFactoryHelper featureSourceFactoryHelper,
-      GeoServiceRepository geoServiceRepository) {
+      ApplicationRepository applicationRepository) {
     this.searchIndexRepository = searchIndexRepository;
     this.solrService = solrService;
     this.featureSourceFactoryHelper = featureSourceFactoryHelper;
-    this.geoServiceRepository = geoServiceRepository;
+    this.applicationRepository = applicationRepository;
   }
 
   /**
@@ -104,36 +105,26 @@ public class SolrTMFeatureTypeEventHandler {
               try (SolrHelper solrHelper = new SolrHelper(solrService.getSolrClientForIndexing())) {
                 solrHelper.clearIndexForLayer(searchIndex.getId());
                 searchIndexRepository.delete(searchIndex);
-                // find layers that use this index in the layer settings and clear them
-                geoServiceRepository
+                // find any application layers that use this index clear the index from them
+                applicationRepository
                     .findByIndexId(searchIndex.getId())
                     .forEach(
-                        geoService ->
-                            geoService
-                                .getLayers()
-                                .forEach(
-                                    layer -> {
-                                      logger.debug(
-                                          "Checking layer {} for search index {}",
-                                          layer.getName(),
-                                          searchIndex.getName());
-                                      geoService
-                                          .findSearchIndexForLayer(layer, searchIndexRepository)
-                                          .ifPresent(
-                                              searchIndex1 -> {
-                                                if (searchIndex1
-                                                    .getId()
-                                                    .equals(searchIndex.getId())) {
-                                                  logger.debug(
-                                                      "Clearing search index for layer {}",
-                                                      layer.getName());
-                                                  geoService
-                                                      .getLayerSettings(layer.getName())
-                                                      .setSearchIndex(null);
-                                                  geoServiceRepository.save(geoService);
-                                                }
-                                              });
-                                    }));
+                        application -> {
+                          application
+                              .getAllAppTreeLayerNode()
+                              .forEach(
+                                  appTreeLayerNode -> {
+                                    AppLayerSettings appLayerSettings =
+                                        application.getAppLayerSettings(appTreeLayerNode);
+                                    if (null != appLayerSettings.getSearchIndexId()
+                                        && appLayerSettings
+                                            .getSearchIndexId()
+                                            .equals(searchIndex.getId())) {
+                                      appLayerSettings.setSearchIndexId(null);
+                                    }
+                                  });
+                          applicationRepository.save(application);
+                        });
               } catch (UnsupportedOperationException
                   | IOException
                   | SolrServerException

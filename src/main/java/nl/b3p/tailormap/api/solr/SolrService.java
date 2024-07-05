@@ -27,7 +27,7 @@ public class SolrService {
    */
   public SolrClient getSolrClientForIndexing() {
     return new ConcurrentUpdateHttp2SolrClient.Builder(
-            solrUrl + solrCoreName,
+            this.solrUrl + this.solrCoreName,
             new Http2SolrClient.Builder()
                 .withFollowRedirects(true)
                 .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
@@ -44,9 +44,13 @@ public class SolrService {
    * @return the Solr client
    */
   public SolrClient getSolrClientForSearching() {
-    return new Http2SolrClient.Builder(solrUrl + solrCoreName)
+    return new Http2SolrClient.Builder(this.solrUrl + this.solrCoreName)
         .withConnectionTimeout(10, TimeUnit.SECONDS)
         .withFollowRedirects(true)
         .build();
+  }
+
+  public void setSolrUrl(String solrUrl) {
+    this.solrUrl = solrUrl;
   }
 }

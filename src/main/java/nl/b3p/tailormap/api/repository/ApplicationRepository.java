@@ -28,14 +28,13 @@ public interface ApplicationRepository extends JpaRepository<Application, Long> 
   /**
    * Find all applications that have a layer that is linked to a specific (Solr) index.
    *
-   * @param indexId The index id to search for //TODO: This query is not working as expected. It
-   *     should return all applications that have a layer that is linked to a specific (Solr) index.
+   * @param indexId The index id to search for
    */
   @NonNull
   @PreAuthorize("permitAll()")
   @Query(
       value =
-          "select * from application app, lateral jsonb_path_query(gs.settings, ('$.layerSettings.**{1}.searchIndex.searchIndexId ? (@ == '||:indexId||')')::jsonpath)",
+          "select * from application app, lateral jsonb_path_query(app.settings, ('$.layerSettings.**{1}.searchIndexId ? (@ == '||:indexId||')')::jsonpath)",
       nativeQuery = true)
   List<Application> findByIndexId(@Param("indexId") @NonNull Long indexId);
 }

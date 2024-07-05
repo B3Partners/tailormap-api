@@ -17,9 +17,7 @@ import java.util.NoSuchElementException;
 import nl.b3p.tailormap.api.geotools.featuresources.FeatureSourceFactoryHelper;
 import nl.b3p.tailormap.api.persistence.SearchIndex;
 import nl.b3p.tailormap.api.persistence.TMFeatureType;
-import nl.b3p.tailormap.api.repository.FeatureSourceRepository;
 import nl.b3p.tailormap.api.repository.FeatureTypeRepository;
-import nl.b3p.tailormap.api.repository.GeoServiceRepository;
 import nl.b3p.tailormap.api.repository.SearchIndexRepository;
 import nl.b3p.tailormap.api.solr.SolrHelper;
 import nl.b3p.tailormap.api.solr.SolrService;
@@ -30,7 +28,6 @@ import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -45,33 +42,20 @@ import org.springframework.web.server.ResponseStatusException;
 /** Admin controller for Solr. */
 @RestController
 public class SolrAdminController {
-  @Value("${tailormap-api.solr-url}")
-  private String solrUrl;
-
-  @Value("${tailormap-api.solr-core-name:tailormap}")
-  private String solrCoreName;
-
   private static final Logger logger =
       LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final FeatureSourceFactoryHelper featureSourceFactoryHelper;
-
-  private final FeatureSourceRepository featureSourceRepository;
   private final FeatureTypeRepository featureTypeRepository;
-  private final GeoServiceRepository geoServiceRepository;
   private final SearchIndexRepository searchIndexRepository;
   private final SolrService solrService;
 
   public SolrAdminController(
       FeatureSourceFactoryHelper featureSourceFactoryHelper,
-      FeatureSourceRepository featureSourceRepository,
       FeatureTypeRepository featureTypeRepository,
-      GeoServiceRepository geoServiceRepository,
       SearchIndexRepository searchIndexRepository,
       SolrService solrService) {
     this.featureSourceFactoryHelper = featureSourceFactoryHelper;
-    this.featureSourceRepository = featureSourceRepository;
     this.featureTypeRepository = featureTypeRepository;
-    this.geoServiceRepository = geoServiceRepository;
     this.searchIndexRepository = searchIndexRepository;
     this.solrService = solrService;
   }

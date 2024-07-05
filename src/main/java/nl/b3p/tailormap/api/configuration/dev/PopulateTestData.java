@@ -1344,10 +1344,8 @@ public class PopulateTestData {
       logger.info("Creating Solr index");
       @SuppressWarnings("PMD.AvoidUsingHardCodedIP")
       final String solrUrl =
-          "http://"
-              + (connectToSpatialDbsAtLocalhost ? "127.0.0.1" : "solr")
-              + ":8983/solr/"
-              + solrCoreName;
+          "http://" + (connectToSpatialDbsAtLocalhost ? "127.0.0.1" : "solr") + ":8983/solr/";
+      this.solrService.setSolrUrl(solrUrl);
       SolrHelper solrHelper = new SolrHelper(this.solrService.getSolrClientForIndexing());
 
       GeoService geoService = geoServiceRepository.findById("snapshot-geoserver").orElseThrow();

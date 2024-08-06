@@ -14,25 +14,20 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import java.io.IOException;
 import java.lang.invoke.MethodHandles;
 import java.util.NoSuchElementException;
-import java.util.concurrent.TimeUnit;
 import nl.b3p.tailormap.api.geotools.featuresources.FeatureSourceFactoryHelper;
 import nl.b3p.tailormap.api.persistence.SearchIndex;
 import nl.b3p.tailormap.api.persistence.TMFeatureType;
-import nl.b3p.tailormap.api.repository.FeatureSourceRepository;
 import nl.b3p.tailormap.api.repository.FeatureTypeRepository;
-import nl.b3p.tailormap.api.repository.GeoServiceRepository;
 import nl.b3p.tailormap.api.repository.SearchIndexRepository;
 import nl.b3p.tailormap.api.solr.SolrHelper;
+import nl.b3p.tailormap.api.solr.SolrService;
 import nl.b3p.tailormap.api.viewer.model.ErrorResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.ConcurrentUpdateHttp2SolrClient;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.client.solrj.response.SolrPingResponse;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -47,32 +42,22 @@ import org.springframework.web.server.ResponseStatusException;
 /** Admin controller for Solr. */
 @RestController
 public class SolrAdminController {
-  @Value("${tailormap-api.solr-url}")
-  private String solrUrl;
-
-  @Value("${tailormap-api.solr-core-name:tailormap}")
-  private String solrCoreName;
-
   private static final Logger logger =
       LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
   private final FeatureSourceFactoryHelper featureSourceFactoryHelper;
-
-  private final FeatureSourceRepository featureSourceRepository;
   private final FeatureTypeRepository featureTypeRepository;
-  private final GeoServiceRepository geoServiceRepository;
   private final SearchIndexRepository searchIndexRepository;
+  private final SolrService solrService;
 
   public SolrAdminController(
       FeatureSourceFactoryHelper featureSourceFactoryHelper,
-      FeatureSourceRepository featureSourceRepository,
       FeatureTypeRepository featureTypeRepository,
-      GeoServiceRepository geoServiceRepository,
-      SearchIndexRepository searchIndexRepository) {
+      SearchIndexRepository searchIndexRepository,
+      SolrService solrService) {
     this.featureSourceFactoryHelper = featureSourceFactoryHelper;
-    this.featureSourceRepository = featureSourceRepository;
     this.featureTypeRepository = featureTypeRepository;
-    this.geoServiceRepository = geoServiceRepository;
     this.searchIndexRepository = searchIndexRepository;
+    this.solrService = solrService;
   }
 
   /**
@@ -99,7 +84,7 @@ public class SolrAdminController {
       path = "${tailormap-api.admin.base-path}/index/ping",
       produces = MediaType.APPLICATION_JSON_VALUE)
   public ResponseEntity<?> pingSolr() {
-    try (SolrClient solrClient = getSolrClient()) {
+    try (SolrClient solrClient = solrService.getSolrClientForIndexing()) {
       final SolrPingResponse ping = solrClient.ping();
       logger.info("Solr ping status {}", ping.getResponse().get("status"));
       return ResponseEntity.ok(
@@ -116,24 +101,6 @@ public class SolrAdminController {
                   .message(e.getLocalizedMessage())
                   .code(HttpStatus.INTERNAL_SERVER_ERROR.value()));
     }
-  }
-
-  /**
-   * Get a concurrent update Solr client for bulk operations.
-   *
-   * @return the Solr client
-   */
-  private SolrClient getSolrClient() {
-    return new ConcurrentUpdateHttp2SolrClient.Builder(
-            solrUrl + solrCoreName,
-            new Http2SolrClient.Builder()
-                .withFollowRedirects(true)
-                .withConnectionTimeout(10000, TimeUnit.MILLISECONDS)
-                .withRequestTimeout(60000, TimeUnit.MILLISECONDS)
-                .build())
-        .withQueueSize(SolrHelper.SOLR_BATCH_SIZE * 2)
-        .withThreadCount(10)
-        .build();
   }
 
   /**
@@ -185,7 +152,7 @@ public class SolrAdminController {
     boolean createNewIndex =
         (null == searchIndex.getLastIndexed()
             || searchIndex.getStatus() == SearchIndex.Status.INITIAL);
-    try (SolrClient solrClient = getSolrClient();
+    try (SolrClient solrClient = solrService.getSolrClientForIndexing();
         SolrHelper solrHelper = new SolrHelper(solrClient)) {
       solrHelper.addFeatureTypeIndex(searchIndex, indexingFT, featureSourceFactoryHelper);
       searchIndexRepository.save(searchIndex);
@@ -234,7 +201,7 @@ public class SolrAdminController {
       produces = MediaType.APPLICATION_JSON_VALUE)
   @Transactional
   public ResponseEntity<?> clearIndex(@PathVariable Long searchIndexId) {
-    try (SolrClient solrClient = getSolrClient();
+    try (SolrClient solrClient = solrService.getSolrClientForIndexing();
         SolrHelper solrHelper = new SolrHelper(solrClient)) {
       solrHelper.clearIndexForLayer(searchIndexId);
       // do not delete the SearchIndex metadata object

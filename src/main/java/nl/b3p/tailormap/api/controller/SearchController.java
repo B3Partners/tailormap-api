@@ -12,7 +12,6 @@ import io.micrometer.core.annotation.Timed;
 import java.io.IOException;
 import java.io.Serializable;
 import java.lang.invoke.MethodHandles;
-import java.util.concurrent.TimeUnit;
 import nl.b3p.tailormap.api.annotation.AppRestController;
 import nl.b3p.tailormap.api.persistence.Application;
 import nl.b3p.tailormap.api.persistence.GeoService;
@@ -21,10 +20,10 @@ import nl.b3p.tailormap.api.persistence.json.AppLayerSettings;
 import nl.b3p.tailormap.api.persistence.json.AppTreeLayerNode;
 import nl.b3p.tailormap.api.repository.SearchIndexRepository;
 import nl.b3p.tailormap.api.solr.SolrHelper;
+import nl.b3p.tailormap.api.solr.SolrService;
 import nl.b3p.tailormap.api.viewer.model.SearchResponse;
 import org.apache.solr.client.solrj.SolrClient;
 import org.apache.solr.client.solrj.SolrServerException;
-import org.apache.solr.client.solrj.impl.Http2SolrClient;
 import org.apache.solr.common.SolrException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -50,17 +49,14 @@ public class SearchController {
 
   private final SearchIndexRepository searchIndexRepository;
 
-  @Value("${tailormap-api.solr-url}")
-  private String solrUrl;
-
-  @Value("${tailormap-api.solr-core-name:tailormap}")
-  private String solrCoreName;
-
   @Value("${tailormap-api.pageSize:100}")
   private int numResultsToReturn;
 
-  public SearchController(SearchIndexRepository searchIndexRepository) {
+  private final SolrService solrService;
+
+  public SearchController(SearchIndexRepository searchIndexRepository, SolrService solrService) {
     this.searchIndexRepository = searchIndexRepository;
+    this.solrService = solrService;
   }
 
   @Transactional(readOnly = true)
@@ -92,7 +88,7 @@ public class SearchController {
                         "Layer '%s' does not have a search index"
                             .formatted(appTreeLayerNode.getLayerName())));
 
-    try (SolrClient solrClient = getSolrClient();
+    try (SolrClient solrClient = solrService.getSolrClientForSearching();
         SolrHelper solrHelper = new SolrHelper(solrClient)) {
       final SearchResponse searchResponse =
           solrHelper.findInIndex(searchIndex, solrQuery, start, numResultsToReturn);
@@ -108,12 +104,5 @@ public class SearchController {
       throw new ResponseStatusException(
           HttpStatus.BAD_REQUEST, "Error while searching with given query", e);
     }
-  }
-
-  private SolrClient getSolrClient() {
-    return new Http2SolrClient.Builder(solrUrl + solrCoreName)
-        .withConnectionTimeout(10, TimeUnit.SECONDS)
-        .withFollowRedirects(true)
-        .build();
   }
 }

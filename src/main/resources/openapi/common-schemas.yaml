@@ -3,7 +3,9 @@
 #
 # SPDX-License-Identifier: MIT
 #
-openapi: 3.0.3
+#$schema: 'https://spec.openapis.org/oas/3.1/dialect/base'
+openapi: 3.1.0
+
 info:
   title: 'models'
   description: 'Tailormap API models common to the persistence layer and the API.'
@@ -70,6 +72,7 @@ components:
       description: 'Bounds without the context of a coordinate reference system'
       type: object
       x-class-extra-annotation: '@jakarta.persistence.Embeddable'
+      title: Bounds
       properties:
         miny:
           description: 'lower bottom'
@@ -92,30 +95,30 @@ components:
         - minx
         - maxy
         - maxx
-      example:
-        miny: 400000
-        minx: 105000
-        maxy: 530000
-        maxx: 275000
+      examples:
+        - miny: 400000
+          minx: 105000
+          maxy: 530000
+          maxx: 275000
 
     # XXX: currently unused
     BoundsWithCRS:
       description: 'Bounds within the context of a coordinate reference system'
+      title: BoundsWithCRS
       allOf:
         - $ref: '#/components/schemas/Bounds'
         - type: object
-          required: [crs]
+          required: [ crs ]
           properties:
             crs:
               description: '(EPSG) code of the projection'
               type: string
-              nullable: false
-      example:
-        miny: 400000
-        minx: 105000
-        maxy: 530000
-        maxx: 275000
-        crs: 'EPSG:28992'
+      examples:
+        - miny: 400000
+          minx: 105000
+          maxy: 530000
+          maxx: 275000
+          crs: 'EPSG:28992'
 
     TMGeometryType:
       type: string
@@ -152,11 +155,10 @@ components:
 
     WMSStyle:
       type: object
-      required: [name]
+      required: [ name ]
       properties:
         name:
           type: string
-          nullable: false
         title:
           type: string
         abstractText:
@@ -173,10 +175,10 @@ components:
         - hideLanguageSwitcher
       properties:
         defaultLanguage:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         hideLanguageSwitcher:
-          nullable: false
           type: boolean
 
     AppUiSettings:
@@ -187,10 +189,8 @@ components:
         - enable3D
       properties:
         hideLoginButton:
-          nullable: false
           type: boolean
         enable3D:
-          nullable: false
           type: boolean
 
     FormOptions:
@@ -199,8 +199,9 @@ components:
       properties:
         description:
           description: 'description text for the form'
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         columns:
           description: 'the number of columns (adjusts the width of the form)'
           type: integer
@@ -238,18 +239,22 @@ components:
             - date
             - timestamp
         tab:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         column:
-          type: number
-          nullable: true
+          type:
+            - number
+            - 'null'
         uniqueValuesAsOptions:
           description: 'when true the unique values for the column are used when editing this field'
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
         valueList:
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: object
             title: FormFieldValue
@@ -259,17 +264,22 @@ components:
               label:
                 type: string
         allowValueListOnly:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
         disabled:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
         required:
-          type: boolean
-          nullable: true
+          type:
+            - boolean
+            - 'null'
         placeholder:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         hint:
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'

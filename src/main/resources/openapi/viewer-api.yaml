@@ -3,7 +3,8 @@
 #
 # SPDX-License-Identifier: MIT
 #
-openapi: 3.0.3
+#$schema: 'https://spec.openapis.org/oas/3.1/dialect/base'
+openapi: 3.1.0
 
 info:
   title: 'Tailormap API'
@@ -95,13 +96,15 @@ components:
         key:
           type: string
         value:
-          type: string
-          nullable: true
           description: 'Scalar string value'
+          type:
+            - string
+            - 'null'
         object:
-          type: object
-          nullable: true
           description: 'Free-form value'
+          type:
+            - object
+            - 'null'
 
     MapResponse:
       description: 'Any information needed to draw a basic map on a page. May include base layers.'
@@ -109,13 +112,15 @@ components:
       properties: # mostly properties from table "application"
         initialExtent:
           description: 'initial bounds for the map'
-          $ref: './common-schemas.yaml#/components/schemas/Bounds'
-          nullable: true
+          anyOf:
+            - $ref: './common-schemas.yaml#/components/schemas/Bounds'
+            - type: 'null'
         maxExtent:
           description: 'maximum bounds for the map'
-          $ref: './common-schemas.yaml#/components/schemas/Bounds'
-          nullable: true
-        services: # TODO in the current implementation this is an object with the id of a service as elemnt
+          anyOf:
+            - $ref: './common-schemas.yaml#/components/schemas/Bounds'
+            - type: 'null'
+        services: # TODO in the current implementation this is an object with the id of a service as element
           #      eg. "1": {"protocol": "tiled", "matrixSets":[], "id": 1
           #      an array seems the better option
           # TODO Not sure we actually/still need this...
@@ -163,29 +168,25 @@ components:
     ViewerResponse:
       type: object
       description: 'Basic viewer information'
-      required: [kind, name, title, baseViewers, languages, projections, styling, components]
+      required: [ kind, name, title, baseViewers, languages, projections, styling, components ]
       properties:
         kind:
           description: Kind of viewer; a 'service' viewer has layers from a single service combined
             with a base viewer. A 'viewer' has content configured from various services.
           type: string
-          nullable: false
           enum:
             - service
             - app
         name:
           type: string
-          nullable: false
         title:
           type: string
-          nullable: false
         baseApps:
           description: Available base apps. The first item is the default. May have one entry
             if only one is available. An empty list means there are no base apps available.
           type: array
           items:
             type: string
-          nullable: false
         i18nSettings:
           $ref: './common-schemas.yaml#/components/schemas/AppI18nSettings'
         uiSettings:
@@ -196,7 +197,6 @@ components:
           type: array
           items:
             type: string
-          nullable: false
         styling:
           $ref: './viewer-schemas.yaml#/components/schemas/AppStyling'
         components:
@@ -205,7 +205,6 @@ components:
           minLength: 0
           items:
             $ref: './viewer-schemas.yaml#/components/schemas/Component'
-          nullable: false
 
     FeaturesResponse:
       description: 'A -possibly empty- list of features with requested attributes and presentation metadata'
@@ -218,17 +217,20 @@ components:
             the total number of available features, can be an estimated value. 
             Can be missing when unknown or irrelevant (eg. featureinfo request)
           '
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
         page:
           description: 'current page, this will allow the client to request the next or previous page by adding or removing 1 or more'
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           minimum: 1
         pageSize:
           description: 'number of features in a page, this will allow calculating the offset (page * pagesize)'
-          type: integer
-          nullable: true
+          type:
+            - integer
+            - 'null'
           readOnly: true
           default: 100
           minimum: 1
@@ -244,12 +246,12 @@ components:
           minLength: 0
           items:
             $ref: './viewer-schemas.yaml#/components/schemas/ColumnMetadata'
-      example:
-        total: 400
-        page: 5
-        pageSize: 100
-        features: [ ]
-        columnMetadata: [ ]
+      examples:
+        - total: 400
+          page: 5
+          pageSize: 100
+          features: [ ]
+          columnMetadata: [ ]
 
     UniqueValuesResponse:
       description: 'A -possibly empty- list of unique values of the requested attributes.'
@@ -269,9 +271,9 @@ components:
           # so allow any non-null value, we don't need to worry about mixed types as the data comes from a
           # typed datasource (database table or WFS)
           items: { }
-      example:
-        filterApplied: false
-        values: [ "value 1", "value 2" ]
+      examples:
+        - filterApplied: false
+          values: [ "value 1", "value 2" ]
 
     SearchResponse:
       description: 'A -possibly empty- list of search documents that fulfill the requested conditions and some metadata.'
@@ -279,30 +281,32 @@ components:
       properties:
         start:
           description: 'requested start point, this will allow the client to request the next or previous page by adding or removing 1 or more. See also https://solr.apache.org/guide/solr/latest/query-guide/common-query-parameters.html#start-parameter'
-          type: integer
+          type:
+            - integer
+            - 'null'
           format: int64
-          nullable: true
           minimum: 0
         total:
           description: 'the total number of available search documents, could be an estimated value.'
           type: integer
           format: int64
-          nullable: false
         maxScore:
           description: 'the maximum score of the search documents. Commonly `null` for wildcard searches as these are filters and don''t score.'
-          type: number
+          type:
+            - number
+            - 'null'
           format: float
-          nullable: true
         documents:
           description: 'list of search documents. When the pagenumber*pagesize exceeds the number of documents this list will be empty'
           type: array
           minLength: 0
           items:
             $ref: '#/components/schemas/SearchDocument'
-      example: { "total": 2,
-                 "start": 10,
-                 "maxScore": null,
-                 "documents": [ { "fid": "fid1","geometry": "POINT(1 2)","displayValues": [ "value 1","value 2" ] } ] }
+      examples:
+        - { "total": 2,
+            "start": 10,
+            "maxScore": null,
+            "documents": [ { "fid": "fid1","geometry": "POINT(1 2)","displayValues": [ "value 1","value 2" ] } ] }
 
     SearchDocument:
       description: 'A search result document'
@@ -311,20 +315,22 @@ components:
         fid:
           description: 'The unique identifier of the feature, also the primary key in the underlying data source'
           type: string
-          nullable: false
         geometry:
           description: 'The geometry of the feature (WKT'
-          type: string
-          nullable: true
+          type:
+            - string
+            - 'null'
         displayValues:
           description: 'The values from the index to display in the search result'
-          type: array
-          nullable: true
+          type:
+            - array
+            - 'null'
           items:
             type: string
-      example: { "fid": "fid1",
-                 "geometry": "POINT(1 2)",
-                 "displayValues": [ "value 1", "value 2" ] }
+      examples:
+        - { "fid": "fid1",
+            "geometry": "POINT(1 2)",
+            "displayValues": [ "value 1", "value 2" ] }
 
 
 paths:
@@ -332,7 +338,7 @@ paths:
     get:
       operationId: 'unauthorized'
       summary: 'Redirect target for API''s which require authentication.'
-      security: []
+      security: [ ]
       responses:
         '401':
           description: 'Unauthorized'
@@ -372,7 +378,8 @@ paths:
               schema:
                 type: string
                 # TODO need to set 'SameSite' and 'Secure'
-                example: JSESSIONID=abcde12345; Path=/; HttpOnly
+                examples:
+                  - JSESSIONID=abcde12345; Path=/; HttpOnly
         '403':
           description: 'Authentication failed'
   /login/configuration:
@@ -444,7 +451,7 @@ paths:
       operationId: getDefaultApp
       summary: 'Get information about the default app'
       security:
-        - formAuth: []
+        - formAuth: [ ]
       responses:
         200:
           description: OK
@@ -464,7 +471,7 @@ paths:
       operationId: getViewer
       summary: 'Get information about a viewer'
       security:
-        - formAuth: []
+        - formAuth: [ ]
       parameters:
         - in: path
           name: viewerKind
@@ -498,7 +505,7 @@ paths:
       operationId: getMap
       summary: 'Get viewer map'
       security:
-        - formAuth: []
+        - formAuth: [ ]
       parameters:
         - in: path
           name: viewerKind
@@ -1018,16 +1025,17 @@ paths:
           type: string
         required: false
       - name: free-form
-        description: Additional OGC and vendor-specific parameters.
-        in: query
+        description: 'Additional OGC and vendor-specific parameters.'
         schema:
           type: object
           additionalProperties: true
+        in: query
         style: form
         explode: true
-        example:
-          LAYER: mylayer
-          BBOX: 1,2,3,4
+#       TODO re-instate examples
+#        examples:
+#          - LAYER: mylayer
+#            BBOX: 1,2,3,4
     get:
       operationId: 'proxy'
       description: 'Proxy a WMS/WMTS request to a map service. Useful for accessing a map service requiring authentication
@@ -1090,9 +1098,10 @@ paths:
               description: OGC and vendor-specific parameters too large for the URL.
               type: object
               additionalProperties: true
-              example:
-                CQL_FILTER: INTERSECTS(geom, BUFFER(POINT(1 2), 10))
-                SLD_BODY: ...
+#              TODO: re-instate examples
+#              examples:
+#                - CQL_FILTER: INTERSECTS(geom, BUFFER(POINT(1 2), 10))
+#                  SLD_BODY: ...
       responses:
         '200':
           description: 'OK'

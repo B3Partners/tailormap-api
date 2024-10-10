@@ -26,5 +26,16 @@ class TMJobDataMapTest {
     TMJobDataMap jobDataMap = new TMJobDataMap(Map.of("type", "test", "description", "test"));
     assertNotNull(jobDataMap);
     assertEquals("NONE", jobDataMap.getStatus().name());
+    assertEquals(5, jobDataMap.getPriority());
+  }
+
+  /** Test the creation using a map with missing required parameters. */
+  @Test
+  void testMapWithPriority() {
+    TMJobDataMap jobDataMap =
+        new TMJobDataMap(Map.of("type", "test", "description", "test", "priority", -1));
+    assertNotNull(jobDataMap);
+    assertEquals("NONE", jobDataMap.getStatus().name());
+    assertEquals(0, jobDataMap.getPriority());
   }
 }
